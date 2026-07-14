@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtualenvs / tooling
+.venv/
+venv/
+.env
+.python-version
+
+# uv / packaging caches
+.uv/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Checkpoints & local runs
+kalman_checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
