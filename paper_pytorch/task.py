@@ -14,6 +14,15 @@ GainCondition = Literal["all_gains", "two_gains"]
 
 
 @dataclass
+class BatchInternals:
+    """Optional generative and filter quantities for a Batch."""
+
+    gain: np.ndarray  # hidden gain, (B, T, 1)
+    expected_rate: np.ndarray  # Poisson means, (B, T, n_in)
+    opt_var: np.ndarray  # Kalman posterior variance, (B, T, 1)
+
+
+@dataclass
 class Batch:
     """One minibatch of Kalman filtering trials.
 
@@ -23,6 +32,7 @@ class Batch:
     input: np.ndarray  # Poisson population responses, (B, T, n_in)
     target: np.ndarray  # true latent s_t, (B, T, 1)
     opt_mean: np.ndarray  # Kalman posterior mean, (B, T, 1)
+    internals: Optional[BatchInternals] = None
 
 
 class KalmanFilteringTask:
@@ -72,7 +82,7 @@ class KalmanFilteringTask:
         self._num_iter += 1
         return idx, self.sample()
 
-    def sample(self) -> Batch:
+    def sample(self, *, include_internals: bool = False) -> Batch:
         B, T, N = self.batch_size, self.stim_dur, self.n_in
         rng = self._rng
 
@@ -86,6 +96,7 @@ class KalmanFilteringTask:
         s = np.zeros((1, T, B))
         m = np.zeros((1, T, B))
         sig_sq = np.zeros((1, T, B))
+        expected_rate = np.zeros((N, T, B)) if include_internals else None
 
         a_in = np.ones(N)
         b_in = self.phi
@@ -94,6 +105,8 @@ class KalmanFilteringTask:
         for ii in range(B):
             s[0, 0, ii] = np.sqrt(self.signu_sq) * rng.standard_normal()
             rate = g[0, ii] * np.exp(-(((s[0, 0, ii] - self.phi) / scale) ** 2))
+            if expected_rate is not None:
+                expected_rate[:, 0, ii] = rate
             r[:, 0, ii] = rng.poisson(rate)
 
             a_dot = float(np.dot(a_in, r[:, 0, ii]))
@@ -106,6 +119,8 @@ class KalmanFilteringTask:
                 rate = g[tt, ii] * np.exp(
                     -(((s[0, tt, ii] - self.phi) / scale) ** 2)
                 )
+                if expected_rate is not None:
+                    expected_rate[:, tt, ii] = rate
                 r[:, tt, ii] = rng.poisson(rate)
 
                 a_dot = float(np.dot(a_in, r[:, tt, ii]))
@@ -116,9 +131,18 @@ class KalmanFilteringTask:
                 ) / (a_dot * k + self.sigtc_sq)
                 sig_sq[0, tt, ii] = (self.sigtc_sq * k) / (a_dot * k + self.sigtc_sq)
 
+        internals = None
+        if expected_rate is not None:
+            internals = BatchInternals(
+                gain=g.T[:, :, None].astype(np.float32),
+                expected_rate=np.swapaxes(expected_rate, 0, 2).astype(np.float32),
+                opt_var=np.swapaxes(sig_sq, 0, 2).astype(np.float32),
+            )
+
         # (n_in, T, B) / (1, T, B) -> (B, T, *)
         return Batch(
             input=np.swapaxes(r, 0, 2).astype(np.float32),
             target=np.swapaxes(s, 0, 2).astype(np.float32),
             opt_mean=np.swapaxes(m, 0, 2).astype(np.float32),
+            internals=internals,
         )

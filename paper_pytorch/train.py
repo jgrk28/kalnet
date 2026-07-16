@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 import torch
@@ -23,6 +23,8 @@ import torch.nn.functional as F
 
 from .model import KalmanRNN
 from .task import Batch, GainCondition, KalmanFilteringTask
+
+DEFAULT_CHECKPOINT = Path("kalman_checkpoints/kf_allgains.pt")
 
 
 def fractional_rmse(
@@ -179,6 +181,8 @@ def train(
                     "tr_cond": tr_cond,
                     "test_cond": test_cond,
                     "seed": seed,
+                    "log_every": log_every,
+                    "max_iter": max_iter,
                 },
             },
             save_path,
@@ -186,6 +190,41 @@ def train(
         print(f"Saved checkpoint to {save_path}")
 
     return result
+
+
+def load_checkpoint(
+    path: Path | str = DEFAULT_CHECKPOINT,
+    *,
+    device: Optional[str | torch.device] = None,
+) -> dict[str, Any]:
+    """Load a checkpoint saved by :func:`train`.
+
+    Returns a dict with ``model`` (eval mode), ``frac_rmse_vec``, ``frac_rmse_test``,
+    ``config``, and the raw ``checkpoint`` payload.
+    """
+    path = Path(path)
+    if device is None:
+        device_t = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        device_t = torch.device(device)
+
+    checkpoint = torch.load(path, map_location=device_t, weights_only=False)
+    cfg = checkpoint["config"]
+    model = KalmanRNN(
+        n_in=cfg["n_in"],
+        n_hid=cfg["n_hid"],
+        n_out=1,
+    ).to(device_t)
+    model.load_state_dict(checkpoint["state_dict"])
+    model.eval()
+    return {
+        "model": model,
+        "device": device_t,
+        "frac_rmse_vec": np.asarray(checkpoint["frac_rmse_vec"]),
+        "frac_rmse_test": float(checkpoint["frac_rmse_test"]),
+        "config": cfg,
+        "checkpoint": checkpoint,
+    }
 
 
 def main() -> None:
@@ -213,7 +252,7 @@ def main() -> None:
     p.add_argument(
         "--save",
         type=Path,
-        default=Path("kalman_checkpoints/kf_allgains.pt"),
+        default=DEFAULT_CHECKPOINT,
     )
     # Smoke-test helper: tiny run without saving.
     p.add_argument("--smoke", action="store_true", help="Short run for sanity check")
