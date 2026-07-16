@@ -1,5 +1,5 @@
 import torch
-from task import KalmanFilteringTask
+from task_vec import KalmanFilteringTask
 from model import KalmanRNN
 
 
