@@ -9,6 +9,7 @@
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import kurtosis, pearsonr
 from sklearn.linear_model import Ridge
 from sklearn.metrics import r2_score
@@ -58,10 +59,8 @@ def hidden_layer_stats(r_hid_flat):
     return mean_act, kurt
 
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    data = torch.load("kf_dataset.pt")
+def lin_decoder(path="kf_dataset.pt"):
+    data = torch.load(path)
     train, test = data["train"], data["test"]
 
     X_train, sigma_sq_train = flatten(train)
@@ -179,3 +178,9 @@ if __name__ == "__main__":
     plt.savefig("decode_results.png", dpi=120)
     plt.show()
     print("\nSaved decode_results.png")
+
+    return data
+
+
+if __name__ == "__main__":
+    lin_decoder()
