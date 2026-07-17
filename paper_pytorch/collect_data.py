@@ -5,9 +5,7 @@ from model import KalmanRNN
 
 def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: str = "cpu"):
     """Collect hidden states + ground truth for n_trials, in chunks of task.batch_size.
-    task should already be constructed with the batch_size/tr_cond/seed you want --
-    unlike the original collect(), those are no longer passed here per-call, since
-    the new KalmanFilteringTask fixes them at construction."""
+    task should already be constructed with the batch_size/tr_cond/seed """
     
     net.eval()
     all_r_hid, all_s, all_g, all_mu, all_sigma_sq, all_s_hat = [], [], [], [], [], []
