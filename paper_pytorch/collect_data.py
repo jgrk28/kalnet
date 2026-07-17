@@ -52,7 +52,7 @@ if __name__ == "__main__":
     # Load the checkpoint saved by the new train.py -- note the extra ["state_dict"]
     # step, since it saves a nested dict, not a bare state_dict like the original
     # model.py's __main__ block did.
-    checkpoint = torch.load("kalman_checkpoints/kf_allgains.pt", map_location=device, weights_only=False)
+    checkpoint = torch.load("kalman_checkpoints/kf_allgains1.pt", map_location=device, weights_only=False)
     net = KalmanRNN(
         n_in=checkpoint["config"]["n_in"],
         n_hid=checkpoint["config"]["n_hid"],
