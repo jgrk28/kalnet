@@ -1,5 +1,5 @@
 import torch
-from task_vec import KalmanFilteringTask
+from task import KalmanFilteringTask
 from model import KalmanRNN
 
 
@@ -7,9 +7,8 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
     """Collect hidden states + ground truth for n_trials, in chunks of task.batch_size.
     task should already be constructed with the batch_size/tr_cond/seed you want --
     unlike the original collect(), those are no longer passed here per-call, since
-    the new KalmanFilteringTask fixes them at construction.
-
-    """
+    the new KalmanFilteringTask fixes them at construction."""
+    
     net.eval()
     all_r_hid, all_s, all_g, all_mu, all_sigma_sq, all_s_hat = [], [], [], [], [], []
 
@@ -46,37 +45,64 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
     }
 
 
-if __name__ == "__main__":
-    device = "cpu"
-
-    # Load the checkpoint saved by the new train.py -- note the extra ["state_dict"]
-    # step, since it saves a nested dict, not a bare state_dict like the original
-    # model.py's __main__ block did.
-    checkpoint = torch.load("kalman_checkpoints/kf_allgains1.pt", map_location=device, weights_only=False)
+def run(
+    checkpoint_path: str = "kalman_checkpoints/kf_allgains.pt",
+    output_path: str = "kf_dataset.pt",
+    n_train: int = 5000,
+    n_test: int = 2000,
+    batch_size: int = 500,
+    tr_cond: str = "all_gains",
+    device: str = "cpu",
+):
+    
+    # Load the checkpoint saved by train.py 
+    
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     net = KalmanRNN(
         n_in=checkpoint["config"]["n_in"],
         n_hid=checkpoint["config"]["n_hid"],
         n_out=1,
     ).to(device)
     net.load_state_dict(checkpoint["state_dict"])
-    print("Loaded trained network.")
+    print(f"Loaded trained network from {checkpoint_path}")
 
     # One KalmanFilteringTask instance per split, each with its own widely-separated
-    # seed (matching the original collect_data.py's non-overlapping-draws guarantee),
-    # and each fixed to a convenient batch_size for chunked collection.
-    train_task = KalmanFilteringTask(batch_size=500, tr_cond="all_gains", seed=1000, device=device)
-    test_task = KalmanFilteringTask(batch_size=500, tr_cond="all_gains", seed=2000, device=device)
+    # seed (guaranteeing non-overlapping draws), fixed to a convenient batch_size
+    # for chunked collection.
+    train_task = KalmanFilteringTask(batch_size=batch_size, tr_cond=tr_cond, seed=1000, device=device)
+    test_task = KalmanFilteringTask(batch_size=batch_size, tr_cond=tr_cond, seed=2000, device=device)
 
     print("Collecting training set (normal trials)...")
-    train_data = collect(train_task, net, n_trials=5000, device=device)
+    train_data = collect(train_task, net, n_trials=n_train, device=device)
 
     print("Collecting held-out test set (normal trials)...")
-    test_data = collect(test_task, net, n_trials=2000, device=device)
+    test_data = collect(test_task, net, n_trials=n_test, device=device)
 
-    torch.save(
-        {"train": train_data, "test": test_data},
-        "kf_dataset.pt",
-    )
-    print("Saved kf_dataset.pt")
+    torch.save({"train": train_data, "test": test_data}, output_path)
+    print(f"Saved {output_path}")
     print(f"  train:    r_hid {train_data['r_hid'].shape}")
     print(f"  test:     r_hid {test_data['r_hid'].shape}")
+
+    return train_data, test_data
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint", default="kalman_checkpoints/kf_allgains.pt",
+                         help="path to the trained checkpoint .pt file")
+    parser.add_argument("--output", default="kf_dataset.pt",
+                         help="path to save the collected dataset .pt file")
+    parser.add_argument("--n_train", type=int, default=5000)
+    parser.add_argument("--n_test", type=int, default=2000)
+    parser.add_argument("--tr_cond", default="all_gains")
+    args = parser.parse_args()
+
+    run(
+        checkpoint_path=args.checkpoint,
+        output_path=args.output,
+        n_train=args.n_train,
+        n_test=args.n_test,
+        tr_cond=args.tr_cond,
+    )
