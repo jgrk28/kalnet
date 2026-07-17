@@ -60,7 +60,7 @@ def hidden_layer_stats(r_hid_flat):
 
 
 def lin_decoder(path="kf_dataset.pt"):
-    data = torch.load(path)
+    data = torch.load(path, weights_only=False)
     train, test = data["train"], data["test"]
 
     X_train, sigma_sq_train = flatten(train)
