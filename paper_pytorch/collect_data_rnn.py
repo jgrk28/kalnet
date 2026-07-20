@@ -13,7 +13,7 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
         while n_collected < n_trials:
             batch = task.sample(include_internals=True)
 
-            # NEW: explicit NumPy -> torch conversion, since batch.* are np.ndarray here
+            # Explicit NumPy -> torch conversion, since batch.* are np.ndarray here
             x = torch.from_numpy(batch.input).to(device)
             s = torch.from_numpy(batch.target[:, :, 0]).to(device)
             g = torch.from_numpy(batch.internals.gain[:, :, 0]).to(device)
