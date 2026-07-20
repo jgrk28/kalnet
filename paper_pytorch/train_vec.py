@@ -8,8 +8,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from model import KalmanRNN
-from task_vec import Batch, GainCondition, KalmanFilteringTask
+from .model import KalmanRNN
+from .task_vec import Batch, GainCondition, KalmanFilteringTask
 
 DEFAULT_CHECKPOINT = Path("kalman_checkpoints/kf_allgains.pt")
 
