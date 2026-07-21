@@ -11,7 +11,8 @@ import torch.nn.functional as F
 from .model import KalmanRNN
 from .task_vec import Batch, GainCondition, KalmanFilteringTask
 
-DEFAULT_CHECKPOINT = Path("kalman_checkpoints/kf_allgains.pt")
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_CHECKPOINT = _REPO_ROOT / "checkpoints" / "kf_vec.pt"
 
 
 def fractional_rmse(targets, preds, opt_means):

@@ -44,8 +44,8 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
 
 
 def run(
-    checkpoint_path: str = "kalman_checkpoints/kf_allgains.pt",
-    output_path: str = "kf_dataset.pt",
+    checkpoint_path: str = "checkpoints/kf_default.pt",
+    output_path: str = "saved_data/kf_dataset.pt",
     n_train: int = 5000,
     n_test: int = 2000,
     batch_size: int = 500,
@@ -88,9 +88,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="kalman_checkpoints/kf_allgains.pt",
+    parser.add_argument("--checkpoint", default="checkpoints/kf_default.pt",
                          help="path to the trained checkpoint .pt file")
-    parser.add_argument("--output", default="kf_dataset.pt",
+    parser.add_argument("--output", default="saved_data/kf_dataset.pt",
                          help="path to save the collected dataset .pt file")
     parser.add_argument("--n_train", type=int, default=5000)
     parser.add_argument("--n_test", type=int, default=2000)

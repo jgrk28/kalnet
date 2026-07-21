@@ -42,7 +42,11 @@ _Avoid_: target; ground truth
 
 **Opt variance**:
 The optimal Kalman filter’s posterior variance of `s`, expressing its remaining uncertainty after incorporating population spikes through the current timestep.
-_Avoid_: gain; estimation error; variance of the Opt mean across Trials
+_Avoid_: gain; estimation error; variance of the Opt mean across Trials; Opt precision
+
+**Opt precision**:
+The reciprocal of Opt variance (`1 / Opt variance`), the preferred uncertainty quantity for decoding analyses.
+_Avoid_: Opt variance when the reciprocal is meant; Gain; estimation error
 
 **Training loss**:
 Final-timestep MSE between network readout and Target.
@@ -51,3 +55,31 @@ _Avoid_: fractional RMSE; full-sequence MSE (unless explicitly chosen)
 **Fractional RMSE**:
 How much worse the network’s RMSE is than the Opt mean’s RMSE, on final-timestep scalars — the paper’s progress metric, not the quantity optimized by Adam.
 _Avoid_: training loss; plain RMSE when the comparison-to-optimal story is intended
+
+**Mean activity**:
+The across-unit mean of the hidden state at one Trial × timestep.
+_Avoid_: Population count; Expected rate; network readout
+
+**Kurtosis (sparsity)**:
+The Fisher kurtosis of the hidden state across units at one Trial × timestep; higher values indicate a more peaked / sparse pattern than a Gaussian.
+_Avoid_: Gain; Opt variance; Decoder R²
+
+**Statistic correlation**:
+An analysis that correlates a scalar hidden-layer summary (Mean activity or Kurtosis) with Opt variance across pooled Trial × timesteps, without fitting a Decoder.
+_Avoid_: Decoder; linear decoding; LEACE eraser
+
+**Decoder**:
+A probe that maps pooled hidden states to a scalar Trial quantity (e.g. Opt mean or Opt precision) and is scored by held-out R².
+_Avoid_: network readout (the trained RNN output); eraser; Statistic correlation
+
+**Concept eraser**:
+An edit to hidden states that removes linearly available information about a chosen concept, so that concept is linearly guarded in the edited representation.
+_Avoid_: Decoder; finetuning; scrubbing of network weights
+
+**LEACE eraser**:
+The least-squares Concept eraser of Belrose et al. (2023): the unique affine edit that linearly guards the concept while minimizing mean squared change to the hidden states.
+_Avoid_: orthogonal projection erasure; RLACE; INLP when the closed-form least-squares eraser is meant
+
+**Per-timestep centering**:
+At each timestep, subtract the across-Trial mean from hidden states and from every scalar Decoder/eraser target, with those means estimated on train Trials only and reused on validation/test.
+_Avoid_: global pooling without removing the shared temporal trajectory; re-estimating means inside each evaluation split

@@ -25,10 +25,7 @@ venv/
 htmlcov/
 
 # Checkpoints & local runs
-kalman_checkpoints/
-*.pt
-*.pth
-*.ckpt
+saved_data/*
 
 # Editors / OS
 .idea/

@@ -45,7 +45,7 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
 if __name__ == "__main__":
     device = "cpu"
 
-    checkpoint = torch.load("kalman_checkpoints/kf_allgains.pt", map_location=device, weights_only=False)
+    checkpoint = torch.load("checkpoints/kf_default.pt", map_location=device, weights_only=False)
     net = KalmanRNN(
         n_in=checkpoint["config"]["n_in"],
         n_hid=checkpoint["config"]["n_hid"],
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     print("Collecting held-out test set (normal trials)...")
     test_data = collect(test_task, net, n_trials=2000, device=device)
 
-    torch.save({"train": train_data, "test": test_data}, "kf_dataset.pt")
-    print("Saved kf_dataset.pt")
+    torch.save({"train": train_data, "test": test_data}, "saved_data/kf_dataset.pt")
+    print("Saved saved_data/kf_dataset.pt")
     print(f"  train:    r_hid {train_data['r_hid'].shape}")
     print(f"  test:     r_hid {test_data['r_hid'].shape}")

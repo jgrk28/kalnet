@@ -8,7 +8,7 @@ Matches the defaults in ``ffwd/ffwd_kalman_filtering_expt.py``:
 
 Example
 -------
-    python -m paper_pytorch.train --max-iter 50001 --device cuda
+    python -m kalnet.train --max-iter 50001 --device cuda
 """
 
 from __future__ import annotations
@@ -24,7 +24,8 @@ import torch.nn.functional as F
 from .model import KalmanRNN
 from .task import Batch, GainCondition, KalmanFilteringTask
 
-DEFAULT_CHECKPOINT = Path("kalman_checkpoints/kf_allgains.pt")
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_CHECKPOINT = _REPO_ROOT / "checkpoints" / "kf_default.pt"
 
 
 def fractional_rmse(
