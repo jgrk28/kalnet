@@ -44,14 +44,21 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
 
 
 def run(
-    checkpoint_path: str = "checkpoints/kf_default.pt",
-    output_path: str = "saved_data/kf_dataset.pt",
+    checkpoint_path: str,
+    output_path: str,
     n_train: int = 5000,
     n_test: int = 2000,
     batch_size: int = 500,
     tr_cond: str = "all_gains",
     device: str = "cpu",
 ):
+    """Collect a hidden-state dataset from one specific checkpoint.
+
+    ``checkpoint_path`` and ``output_path`` are required and have no defaults:
+    a dataset only makes sense paired with the exact network that produced it,
+    so the caller names both explicitly (convention: ``<name>.pt`` checkpoint
+    -> ``<name>_dataset.pt`` dataset).
+    """
     
     # Load the checkpoint saved by train.py 
     
@@ -76,7 +83,13 @@ def run(
     print("Collecting held-out test set (normal trials)...")
     test_data = collect(test_task, net, n_trials=n_test, device=device)
 
-    torch.save({"train": train_data, "test": test_data}, output_path)
+    # Record which checkpoint produced this dataset. The hidden states in
+    # r_hid belong to exactly this network, so the breadcrumb makes an
+    # accidental mismatch easy to spot later.
+    torch.save(
+        {"train": train_data, "test": test_data, "checkpoint_path": checkpoint_path},
+        output_path,
+    )
     print(f"Saved {output_path}")
     print(f"  train:    r_hid {train_data['r_hid'].shape}")
     print(f"  test:     r_hid {test_data['r_hid'].shape}")
@@ -88,9 +101,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="checkpoints/kf_default.pt",
+    parser.add_argument("--checkpoint", required=True,
                          help="path to the trained checkpoint .pt file")
-    parser.add_argument("--output", default="saved_data/kf_dataset.pt",
+    parser.add_argument("--output", required=True,
                          help="path to save the collected dataset .pt file")
     parser.add_argument("--n_train", type=int, default=5000)
     parser.add_argument("--n_test", type=int, default=2000)

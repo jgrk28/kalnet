@@ -24,9 +24,6 @@ import torch.nn.functional as F
 from .model import KalmanRNN
 from .task import Batch, GainCondition, KalmanFilteringTask
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CHECKPOINT = _REPO_ROOT / "checkpoints" / "kf_default.pt"
-
 
 def fractional_rmse(
     targets: np.ndarray,
@@ -194,11 +191,13 @@ def train(
 
 
 def load_checkpoint(
-    path: Path | str = DEFAULT_CHECKPOINT,
+    path: Path | str,
     *,
     device: Optional[str | torch.device] = None,
 ) -> dict[str, Any]:
     """Load a checkpoint saved by :func:`train`.
+
+    ``path`` is required: every checkpoint has an explicit, distinct name.
 
     Returns a dict with ``model`` (eval mode), ``frac_rmse_vec``, ``frac_rmse_test``,
     ``config``, and the raw ``checkpoint`` payload.
@@ -253,7 +252,8 @@ def main() -> None:
     p.add_argument(
         "--save",
         type=Path,
-        default=DEFAULT_CHECKPOINT,
+        default=None,
+        help="path to save the trained checkpoint .pt file (required unless --smoke)",
     )
     # Smoke-test helper: tiny run without saving.
     p.add_argument("--smoke", action="store_true", help="Short run for sanity check")
@@ -276,6 +276,9 @@ def main() -> None:
             test_cond=args.test_cond,
         )
         return
+
+    if args.save is None:
+        p.error("--save is required for a full training run (or pass --smoke)")
 
     train(
         n_in=args.n_in,

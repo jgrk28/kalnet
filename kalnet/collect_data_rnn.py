@@ -43,28 +43,43 @@ def collect(task: KalmanFilteringTask, net: KalmanRNN, n_trials: int, device: st
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--checkpoint", required=True,
+                        help="path to the trained checkpoint .pt file")
+    parser.add_argument("--output", required=True,
+                        help="path to save the collected dataset .pt file")
+    parser.add_argument("--n_train", type=int, default=5000)
+    parser.add_argument("--n_test", type=int, default=2000)
+    parser.add_argument("--tr_cond", default="all_gains")
+    args = parser.parse_args()
+
     device = "cpu"
 
-    checkpoint = torch.load("checkpoints/kf_default.pt", map_location=device, weights_only=False)
+    checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=False)
     net = KalmanRNN(
         n_in=checkpoint["config"]["n_in"],
         n_hid=checkpoint["config"]["n_hid"],
         n_out=1,
     ).to(device)
     net.load_state_dict(checkpoint["state_dict"])
-    print("Loaded trained network.")
+    print(f"Loaded trained network from {args.checkpoint}")
 
     # NOTE: no device= argument here -- the original KalmanFilteringTask doesn't accept one.
-    train_task = KalmanFilteringTask(batch_size=500, tr_cond="all_gains", seed=1000)
-    test_task = KalmanFilteringTask(batch_size=500, tr_cond="all_gains", seed=2000)
+    train_task = KalmanFilteringTask(batch_size=500, tr_cond=args.tr_cond, seed=1000)
+    test_task = KalmanFilteringTask(batch_size=500, tr_cond=args.tr_cond, seed=2000)
 
     print("Collecting training set (normal trials)...")
-    train_data = collect(train_task, net, n_trials=5000, device=device)
+    train_data = collect(train_task, net, n_trials=args.n_train, device=device)
 
     print("Collecting held-out test set (normal trials)...")
-    test_data = collect(test_task, net, n_trials=2000, device=device)
+    test_data = collect(test_task, net, n_trials=args.n_test, device=device)
 
-    torch.save({"train": train_data, "test": test_data}, "saved_data/kf_dataset.pt")
-    print("Saved saved_data/kf_dataset.pt")
+    torch.save(
+        {"train": train_data, "test": test_data, "checkpoint_path": args.checkpoint},
+        args.output,
+    )
+    print(f"Saved {args.output}")
     print(f"  train:    r_hid {train_data['r_hid'].shape}")
     print(f"  test:     r_hid {test_data['r_hid'].shape}")

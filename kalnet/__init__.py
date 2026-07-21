@@ -2,10 +2,9 @@
 
 from .model import KalmanRNN
 from .task import KalmanFilteringTask
-from .train import DEFAULT_CHECKPOINT, load_checkpoint, train
+from .train import load_checkpoint, train
 
 __all__ = [
-    "DEFAULT_CHECKPOINT",
     "KalmanFilteringTask",
     "KalmanRNN",
     "load_checkpoint",

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Mapping, Optional
 
 import numpy as np
@@ -11,10 +10,6 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import r2_score
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
-
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DATASET = _REPO_ROOT / "saved_data" / "kf_dataset.pt"
-DEFAULT_CHECKPOINT = _REPO_ROOT / "checkpoints" / "kf_default.pt"
 
 
 def trial_train_validation_indices(
